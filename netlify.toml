@@ -1,0 +1,10 @@
+# clvi-testing — Netlify site configuration.
+# This repo holds no secrets. Smoke-test base URLs are supplied per-run as
+# environment variables to `node --test`, never committed here.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"

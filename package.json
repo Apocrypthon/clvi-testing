@@ -1,0 +1,24 @@
+{
+  "name": "clvi-testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "STRATA proof repo: the iPhone acceptance checklist, contract smoke tests against the loop deploys, and the solve-timing bench.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.ts",
+    "check": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7"
+  }
+}
