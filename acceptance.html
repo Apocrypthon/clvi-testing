@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="The seven-item STRATA iPhone acceptance checklist. Tap through it on the phone, mid-run." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Acceptance · clvi-testing</title>
+    <link rel="stylesheet" href="./src/style.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b4531a'/%3E%3Cpath d='M9 17l4.5 4.5L23 12' stroke='%23fff' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <p class="eyebrow">STRATA · T1 acceptance</p>
+        <h1>iPhone checklist</h1>
+        <p class="stamp" id="stamp">build …</p>
+
+        <div class="progress">
+          <span class="count" id="count">0/7</span>
+          <span class="verdict" id="verdict" data-verdict="incomplete">not started</span>
+        </div>
+        <div class="bar" id="bar" role="img" aria-label="Progress through the seven items"></div>
+        <p class="notice" id="notice"></p>
+      </header>
+
+      <main>
+        <details class="panel" id="setup-panel">
+          <summary>Run setup — device &amp; deploys</summary>
+          <div class="panel-body" id="setup"></div>
+        </details>
+
+        <ol class="items" id="items"></ol>
+
+        <details class="panel" id="history-panel">
+          <summary>Runs history</summary>
+          <div class="panel-body" id="history"></div>
+        </details>
+      </main>
+
+      <footer class="foot">
+        <p>
+          Criteria are SEED.md's milestone T1, verbatim. State lives in this phone's
+          localStorage and never leaves it.
+        </p>
+        <p><a href="./index.html">← clvi-testing</a></p>
+      </footer>
+    </div>
+
+    <div class="dock">
+      <div class="actions">
+        <button class="btn btn-primary" id="finish" type="button">Save run</button>
+        <button class="btn" id="reset" type="button">Reset</button>
+      </div>
+    </div>
+
+    <script type="module" src="./src/acceptance/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,498 @@
+/*
+ * iPhone Safari first. This page is used ON the phone, mid-run, one-handed,
+ * possibly outdoors — so it has to pass the checklist it carries:
+ *
+ *   item 1  no webfonts, no CDN, ~5 KB of JS: nothing to wait for
+ *   item 3  every control is >= 44 px and reachable by thumb; no hover-only
+ *   item 4  the page itself must not rubber-band while you scroll a long list
+ *
+ * Anything that would break one of those is a bug in this file.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #f5f4f1;
+  --surface: #ffffff;
+  --surface-2: #ecebe7;
+  --ink: #16150f;
+  --ink-dim: #5c5a50;
+  --line: #d8d5cc;
+  --accent: #b4531a;          /* Paradise dust */
+  --pass: #1c6b3f;
+  --pass-bg: #dff0e4;
+  --fail: #a01f2e;
+  --fail-bg: #fadfe2;
+  --warn: #8a6100;
+  --warn-bg: #fbf0d2;
+
+  --tap: 44px;                /* the floor item 3 asks for */
+  --radius: 12px;
+  --pad: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f;
+    --surface: #1e1c17;
+    --surface-2: #282520;
+    --ink: #f2efe6;
+    --ink-dim: #a8a294;
+    --line: #38342c;
+    --accent: #e0803f;
+    --pass: #6fd39a;
+    --pass-bg: #17301f;
+    --fail: #ff8b96;
+    --fail-bg: #351317;
+    --warn: #e8bd5c;
+    --warn-bg: #322709;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Item 4's sibling problem: keep the document itself from bouncing. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  /* Respect the notch and the home indicator: item 1 says viewport clean. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* No double-tap zoom delay on anything you are meant to tap. */
+button, summary, a, input, label { touch-action: manipulation; }
+
+.wrap {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: var(--pad) var(--pad) 0;
+}
+
+/* ---------- header ---------- */
+
+header.top {
+  padding: 20px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+h1 {
+  margin: 4px 0 8px;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.stamp {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink-dim);
+  word-break: break-all;
+}
+
+/* ---------- progress ---------- */
+
+.progress {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+
+.progress .count {
+  font-size: 30px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.progress .verdict {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-dim);
+}
+
+.progress .verdict[data-verdict="green"] { background: var(--pass-bg); color: var(--pass); }
+.progress .verdict[data-verdict="failed"] { background: var(--fail-bg); color: var(--fail); }
+.progress .verdict[data-verdict="incomplete"] { background: var(--warn-bg); color: var(--warn); }
+
+.bar {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin-bottom: 4px;
+}
+
+.bar span {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.bar span[data-result="pass"] { background: var(--pass); border-color: var(--pass); }
+.bar span[data-result="fail"] { background: var(--fail); border-color: var(--fail); }
+
+/* ---------- notices ---------- */
+
+.notice {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.notice a { color: inherit; }
+.notice:empty { display: none; }
+
+/* ---------- panels ---------- */
+
+details.panel {
+  margin: 14px 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+details.panel > summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px var(--pad);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+details.panel > summary::-webkit-details-marker { display: none; }
+
+details.panel > summary::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--ink-dim);
+  transition: transform 0.15s ease;
+}
+
+details.panel[open] > summary::after { transform: rotate(90deg); }
+
+.panel-body {
+  padding: 4px var(--pad) var(--pad);
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- fields ---------- */
+
+.field { display: block; margin: 12px 0; }
+
+.field > span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 5px;
+}
+
+.field .hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--ink-dim);
+}
+
+input[type="text"], input[type="url"], textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  /* 16px keeps iOS Safari from zooming the viewport on focus — item 1. */
+  font-size: 16px;
+  font-family: inherit;
+}
+
+textarea { min-height: 66px; resize: vertical; line-height: 1.45; }
+
+input[aria-invalid="true"] { border-color: var(--fail); }
+
+/* ---------- checklist ---------- */
+
+ol.items { list-style: none; margin: 16px 0; padding: 0; }
+
+li.item {
+  margin-bottom: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+li.item[data-result="pass"] { border-left-color: var(--pass); }
+li.item[data-result="fail"] { border-left-color: var(--fail); }
+
+.item-head {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.item-text {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 4px 12px 12px;
+}
+
+.item-text h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.item-text .criterion {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+/* The two marks. Square, 56 px, thumb-sized on purpose: item 3's floor is 44. */
+button.mark {
+  flex: 0 0 auto;
+  width: 56px;
+  min-height: 56px;
+  border: none;
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.mark:active { background: var(--surface-2); }
+
+button.mark .box {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 auto;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+button.mark[aria-pressed="true"] { color: var(--pass); }
+button.mark[aria-pressed="true"] .box { background: var(--pass); border-color: var(--pass); color: var(--surface); }
+button.mark-fail[aria-pressed="true"] { color: var(--fail); }
+button.mark-fail[aria-pressed="true"] .box { background: var(--fail); border-color: var(--fail); color: var(--surface); }
+
+/* Focus must be visible for the keyboard, and is harmless on the phone. */
+button:focus-visible, summary:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.item details { border-top: 1px solid var(--line); }
+
+.item details > summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+.item details > summary::-webkit-details-marker { display: none; }
+.item details > summary::after { content: "▸"; margin-left: auto; transition: transform 0.15s ease; }
+.item details[open] > summary::after { transform: rotate(90deg); }
+
+.item-detail { padding: 0 12px 12px; }
+
+.item-detail ol {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+.item-detail ol li { margin-bottom: 5px; }
+
+.item-detail .fails {
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--fail-bg);
+  color: var(--fail);
+  font-size: 13px;
+}
+
+/* ---------- buttons ---------- */
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+
+.btn {
+  flex: 1 1 auto;
+  min-height: var(--tap);
+  min-width: 108px;
+  padding: 11px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active { background: var(--surface-2); }
+.btn[disabled] { opacity: 0.45; cursor: default; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-danger { color: var(--fail); }
+
+.btn-open {
+  display: inline-flex;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+/* ---------- history ---------- */
+
+.runs { list-style: none; margin: 10px 0 0; padding: 0; }
+
+.runs li {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.runs summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.runs summary::-webkit-details-marker { display: none; }
+
+.pill {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-dim);
+}
+
+.pill[data-verdict="green"] { background: var(--pass-bg); color: var(--pass); }
+.pill[data-verdict="failed"] { background: var(--fail-bg); color: var(--fail); }
+.pill[data-verdict="incomplete"] { background: var(--warn-bg); color: var(--warn); }
+
+.run-body { padding: 2px 12px 12px; border-top: 1px solid var(--line); }
+
+.run-body dl { margin: 8px 0; font-size: 12px; color: var(--ink-dim); }
+.run-body dt { font-weight: 600; }
+.run-body dd { margin: 0 0 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+
+.run-items { list-style: none; margin: 8px 0 12px; padding: 0; font-size: 13px; }
+
+.run-items li {
+  display: flex;
+  gap: 8px;
+  padding: 5px 0;
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+}
+
+.run-items .mark-text { flex: 0 0 1.4em; font-weight: 700; }
+.run-items li[data-result="pass"] .mark-text { color: var(--pass); }
+.run-items li[data-result="fail"] .mark-text { color: var(--fail); }
+.run-items .note { display: block; color: var(--ink-dim); font-size: 12px; }
+
+.empty { color: var(--ink-dim); font-size: 14px; margin: 10px 0; }
+
+/* ---------- sticky action bar ---------- */
+
+.dock {
+  position: sticky;
+  bottom: 0;
+  margin-top: 20px;
+  padding: 10px var(--pad) calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+}
+
+footer.foot {
+  padding: 24px 0 40px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+footer.foot a { color: var(--accent); }
+
+.link-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.link-list li { margin-bottom: 8px; }
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.dim { color: var(--ink-dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
