@@ -20,8 +20,8 @@ const milestones: ReadonlyArray<readonly [string, string, string]> = [
   ["T0", "done", "Scaffold, docs, netlify.toml, build gate."],
   ["T1", "done", `The ${CHECKLIST.length}-item iPhone acceptance checklist, with runs history.`],
   ["T2", "done", "Contract smoke against the loop deploys — skips honestly when a sibling is not live."],
-  ["T3", "next", "Solve bench at 14/16/18 bits, feeding docs/BENCH.md."],
-  ["T4", "later", "Drift check across the sibling repos' STATE.md claims."],
+  ["T3", "done", "Solve bench at 14/16/18 bits, recommending a difficultyBits for docs/BENCH.md."],
+  ["T4", "next", "Drift check across the sibling repos' STATE.md claims."],
 ];
 
 app.append(
@@ -33,7 +33,12 @@ app.append(
         "This is the relay's proof repo. It holds the acceptance checklist you run on the phone, " +
         "and the contract tests that check the loop deploys actually behave the way Contracts v1 says.",
     }),
-    h("div", { class: "actions" }, h("a", { class: "btn btn-primary", href: "./acceptance.html", text: "Open the acceptance checklist →" })),
+    h(
+      "div",
+      { class: "actions" },
+      h("a", { class: "btn btn-primary", href: "./acceptance.html", text: "Acceptance checklist →" }),
+      h("a", { class: "btn", href: "./bench.html", text: "Solve bench →" }),
+    ),
   ),
 );
 

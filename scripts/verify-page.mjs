@@ -196,10 +196,71 @@ check("no element was injected by the note", (await page.locator(".run-items img
 
 check("no uncaught page errors", consoleErrors.length === 0, consoleErrors.join("\n       "));
 
+console.log(`\n── bench page, 390×844 ─────────────────────────────────────`);
+await page.goto(`${base}/bench.html`, { waitUntil: "load" });
+
+check("bench title names the bench", (await page.title()).includes("Solve bench"));
+check("it asks for the device before anything else", await page.locator("#device").isVisible());
+check("an unnamed device is called out", (await page.locator("#notice").innerText()).includes("rumour"));
+
+const benchSmall = await page.$$eval("button, summary, a.btn, input, textarea", (els) =>
+  els
+    .map((el) => {
+      const r = el.getBoundingClientRect();
+      return { tag: el.tagName.toLowerCase(), cls: el.className, w: Math.round(r.width), h: Math.round(r.height) };
+    })
+    .filter((box) => box.w > 0 && box.h > 0 && (box.w < 44 || box.h < 44)),
+);
+check("every bench control is at least 44×44", benchSmall.length === 0, JSON.stringify(benchSmall));
+
+const benchOverflow = await page.evaluate(() => ({
+  scrollWidth: document.documentElement.scrollWidth,
+  clientWidth: document.documentElement.clientWidth,
+}));
+check("bench page does not scroll sideways", benchOverflow.scrollWidth <= benchOverflow.clientWidth + 1);
+
+await page.locator("#device").fill("Verification Chromium · 390×844");
+await page.locator(".seg button").first().tap(); // shortest budget
+check("the budget control records a choice", (await page.locator(".seg button").first().getAttribute("aria-pressed")) === "true");
+
+// Actually run it. Three difficulties at the 3 s budget, plus the subtle
+// comparison — this is the real hash loop, not a stub.
+await page.locator("#controls .btn-primary").tap();
+check("progress appears while it runs", await page.locator("#live").isVisible());
+await page.locator(".verdict-card").waitFor({ timeout: 90_000 });
+
+const verdict = await page.locator(".verdict-card .big").innerText();
+check("it reaches a recommendation", verdict.length > 0, verdict);
+check("the results table has a row per difficulty", (await page.locator("table.bench tbody tr").count()) === 3);
+
+const rows = await page.locator("table.bench tbody tr").allInnerTexts();
+check("every difficulty measured a non-zero rate", rows.every((r) => !r.includes("—\t—")), JSON.stringify(rows));
+
+const markdown = await page.locator("pre.copyout").innerText();
+check("the copy block names the device", markdown.includes("Verification Chromium"));
+check("the copy block ran in a Worker, not the fallback", markdown.includes("Worker"), markdown.split("\n")[2]);
+check("the copy block carries a markdown table", markdown.includes("| bits | hashes/sec |"));
+check("the copy block states a recommendation", /Recommended `difficultyBits`|No difficulty fits/.test(markdown));
+check("the table is horizontally scrollable rather than overflowing", await page.locator(".table-scroll").isVisible());
+
+const benchOverflowAfter = await page.evaluate(() => ({
+  scrollWidth: document.documentElement.scrollWidth,
+  clientWidth: document.documentElement.clientWidth,
+}));
+check(
+  "results do not make the page scroll sideways",
+  benchOverflowAfter.scrollWidth <= benchOverflowAfter.clientWidth + 1,
+  `scrollWidth ${benchOverflowAfter.scrollWidth} > clientWidth ${benchOverflowAfter.clientWidth}`,
+);
+
+await page.screenshot({ path: join(SHOTS, "bench-light.png"), fullPage: true });
+console.log("\n  measured on this runner:\n" + markdown.split("\n").map((l) => "    " + l).join("\n"));
+
 console.log(`\n── index page ──────────────────────────────────────────────`);
 await page.goto(`${base}/index.html`, { waitUntil: "load" });
 check("index title carries the build timestamp", /^clvi-testing · \d{4}-\d{2}-\d{2}T/.test(await page.title()));
 check("index links to the checklist", (await page.locator('a[href="./acceptance.html"]').count()) === 1);
+check("index links to the bench", (await page.locator('a[href="./bench.html"]').count()) === 1);
 await page.screenshot({ path: join(SHOTS, "index-light.png"), fullPage: true });
 
 await browser.close();

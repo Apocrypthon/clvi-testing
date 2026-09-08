@@ -50,10 +50,17 @@ and date that produced it. See `docs/LOOP.md#loop-hygiene-learned-so-far`.
 ## Layout
 
 ```
-index.html, acceptance.html   the two pages (Vite multi-page build)
+index.html                    hub: milestones, deploy targets, Contracts v1
+acceptance.html               T1 — the seven-item iPhone checklist
+bench.html                    T3 — the solve bench, recommends a difficultyBits
 src/lib/                      all the logic, unit-tested, no DOM and no network
 src/acceptance/               DOM wiring for the checklist
+src/bench/                    DOM wiring for the bench, plus its Worker
 tests/                        node --test; smoke.test.ts is the only live one
-scripts/verify-page.mjs       drives the built page in an iPhone-sized Chromium
-docs/                         the memory: VISION, LOOP, STATE, CHANGELOG
+scripts/verify-page.mjs       drives the built pages in an iPhone-sized Chromium
+docs/                         the memory: VISION, LOOP, STATE, CHANGELOG, BENCH
 ```
+
+The hashing is a hand-written synchronous SHA-256 (`src/lib/sha256.ts`), not
+`crypto.subtle.digest`. That is a measured decision, not a preference — see
+`docs/BENCH.md#why-the-solve-loop-does-not-use-cryptosubtledigest`.

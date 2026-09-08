@@ -7,8 +7,9 @@ do are telling the truth.
   and a timestamped runs history kept on the phone.
 - **The contract smoke suite** — `node --test` against a live deploy, checking that
   it honours Contracts v1.
-- **The solve bench** (T3, not built yet) — measures hash rate on a real phone so
-  the backend's start difficulty is tuned from data.
+- **The solve bench** — measures SHA-256 rate on a real phone and recommends the
+  `difficultyBits` that puts a solve in the 3–8 s window item 5 asks for.
+  Results live in [`docs/BENCH.md`](./docs/BENCH.md).
 
 ```
 npm ci
@@ -25,6 +26,7 @@ STRATA_BACKEND_BASE=https://… SMOKE_MINT=1 npm test   # mints exactly one toke
 
 Start with [`CLAUDE.md`](./CLAUDE.md), then [`docs/STATE.md`](./docs/STATE.md).
 
-**Current status:** T0–T2 done and green offline; the live checks have never run,
-because no sibling is deployed yet. `docs/STATE.md` says so in detail, which is the
+**Current status:** T0–T3 done and green offline. Two things have never run: the
+live contract checks (no sibling is deployed yet) and the bench on an actual phone
+(only a desktop browser so far). `docs/STATE.md` says so in detail, which is the
 whole point of this repo.

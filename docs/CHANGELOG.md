@@ -2,6 +2,60 @@
 
 One entry per session, newest first: date · what · why · files · verify result.
 
+## 2026-09-08 — T3, the solve bench
+
+**What.** `bench.html`, a third Vite entry: it runs the real hash loop at
+difficultyBits 14/16/18 in a Worker, reports hashes/sec and projected median
+solve time per difficulty, and recommends the `difficultyBits` that puts a solve
+inside item 5's 3-8 s window on *this* device. The result copies out as a
+markdown block for `docs/BENCH.md`, carrying the device name and the date.
+
+**Why.** The backend picks a start difficulty and currently defaults to 18. That
+was a guess. Item 5 of the acceptance checklist makes it measurable, so this
+measures it.
+
+**The finding that changed the design.** STATE.md's own Next list said to build
+this on `crypto.subtle.digest`. That was wrong, and measuring it first is what
+caught it: `subtle.digest` is async, a solve needs one digest per nonce serially,
+and a promise per hash costs far more than the hash. Measured — 16,000 h/s
+awaited serially against ~950,000 h/s synchronous, an 11.3 s median at 18 bits
+against 0.2 s. So `src/lib/sha256.ts` is a hand-written synchronous SHA-256,
+pinned against the NIST vectors and differentially against `node:crypto` at every
+length across the padding boundaries. The bench still measures `subtle.digest` on
+every run and prints the ratio, so the decision keeps justifying itself on real
+devices instead of ageing into a comment nobody rechecks.
+
+**A bug the output revealed, that the tests did not.** The bench's adaptive chunk
+size scaled from the chunk's *budget* rather than the hashes actually performed,
+so every early-finishing solve inflated it until it pinned to the 4M cap — after
+which one chunk ran seconds past the deadline. The 18-bit row collected 4 samples
+instead of 12 and reported an observed median 3.5x its projection. Everything
+passed; the numbers were simply wrong. Caught by reading them, fixed, and pinned
+by two regression tests. LOOP.md gains the rule: when a bench prints two numbers
+that should agree and they do not, that is the finding.
+
+**What it already suggests.** On the only device measured — the headless Chromium
+that `scripts/verify-page.mjs` drives, explicitly *not* a phone — 18 bits solves
+in 0.19 s against a 3 s floor, and the recommendation is 23. That is a real signal
+and not yet evidence; `docs/BENCH.md` records it as not-a-phone and refuses to
+tune the backend from it. One run on an actual iPhone would settle it, and that is
+now item 2 in `Next`.
+
+**Files.** `bench.html`; `src/lib/sha256.ts`, `src/lib/bench.ts`;
+`src/bench/{main,worker,protocol}.ts`; `src/style.css`, `src/main.ts`,
+`vite.config.ts`; `tests/sha256.test.ts`, `tests/bench.test.ts`;
+`scripts/verify-page.mjs`; `docs/BENCH.md`, `docs/STATE.md`, `docs/LOOP.md`,
+`CLAUDE.md`, `README.md`.
+
+**Verify.** `npm run check` → typecheck clean, `vite build` produced three pages
+plus a Worker chunk, `node --test` → **164 tests, 164 pass, 0 fail** (was 114).
+`node scripts/verify-page.mjs` → **40/40** (was 23/23), including a real
+three-difficulty bench run in a real Worker at 390x844.
+
+**Not verified, and not claimed.** The bench has never run on a phone, and the
+live smoke suite still has no deploy to point at. Both are recorded as such in
+`docs/STATE.md#blocker`.
+
 ## 2026-09-03 — bootstrap T0, then T1 and T2
 
 **What.** Brought the repo up from empty (LICENSE + README) to the seed's

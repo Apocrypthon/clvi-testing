@@ -88,3 +88,16 @@ whether the others are telling the truth.
 - **Dogfood the checklist.** The acceptance page must itself pass items 1, 3 and 4
   of the checklist it carries. `scripts/verify-page.mjs` asserts that in a real
   iPhone-sized browser.
+- **When two numbers that should agree do not, that is the finding.** Read the
+  output, do not just check that it is green. T3's bench printed a projected
+  median of 196 ms next to an observed median of 682 ms for the same difficulty,
+  while the other rows agreed within noise. Everything passed. The gap was a real
+  bug in the chunk sizing, and the temptation — "small samples, geometric
+  distribution, that is just variance" — was a perfectly plausible way to ship
+  wrong numbers. Explain a discrepancy by finding its cause, not by naming a
+  phenomenon that could produce it.
+- **Measure before you design on top of an assumption.** The Next list that
+  commissioned T3 specified `crypto.subtle.digest`. Ten minutes of measurement
+  showed it is 60x too slow for the job, which changed the whole shape of the
+  increment. A note left by a previous session is a hypothesis, not an
+  instruction — this repo of all repos should check it.

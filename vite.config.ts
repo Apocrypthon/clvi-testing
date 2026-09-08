@@ -13,11 +13,11 @@ export default defineConfig({
   },
   build: {
     target: "es2022",
-    // Milestone T1 ships two pages; T3's bench page will be a third entry here.
     rollupOptions: {
       input: {
         index: resolve(import.meta.dirname, "index.html"),
         acceptance: resolve(import.meta.dirname, "acceptance.html"),
+        bench: resolve(import.meta.dirname, "bench.html"),
       },
     },
   },

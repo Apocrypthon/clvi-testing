@@ -1,6 +1,6 @@
 # STATE
 
-**Last session:** 2026-09-03 · bootstrap T0 + T1 + T2.
+**Last session:** 2026-09-08 · T3, the solve bench.
 
 ## Blocker — read this first
 
@@ -22,9 +22,16 @@ Fact 2 makes this session's probe **inconclusive**, and the suite says so rather
 than recording a verdict. Fact 1 is the real reason T2 has no live result, and it
 is sourced from the backend's own docs, not from a failed request.
 
+There is now a **third** thing in the same family, added by T3: the solve bench
+has never been run on a phone. It has been run — on the headless Chromium that
+`scripts/verify-page.mjs` drives — and that result is recorded in `docs/BENCH.md`
+clearly labelled as not-a-phone. A desktop hash rate cannot tune the backend's
+difficulty, and BENCH.md says so rather than quietly using it.
+
 **The next session's first job is the first item in `Next`.** Until a real base
 URL exists, treat T2 as *written and self-tested*, not as *passing against the
-ledger*.
+ledger*; until a phone has run the bench, treat T3's recommendation as measured
+on the wrong class of device.
 
 ## Where the work is
 
@@ -33,13 +40,14 @@ ledger*.
 | T0 — scaffold, netlify.toml, docs, build gate | **done** |
 | T1 — acceptance page | **done**, verified in an iPhone-sized browser |
 | T2 — contract smoke | **done** offline; **never run live** (see Blocker) |
-| T3 — solve bench | not started |
+| T3 — solve bench | **done**, verified in a browser; **never run on a phone** |
 | T4 — drift check | not started |
 
-`npm run check` is green: 114 tests, 0 failures. That number covers the shape
-validators, the solve rule, the checklist state machine, the runs history, base-URL
-handling and the reachability classifier. It covers **none** of the live ledger,
-because there is no live ledger.
+`npm run check` is green: 164 tests, 0 failures. That number covers the shape
+validators, the solve rule, SHA-256 itself, the bench runner and its tuning
+arithmetic, the checklist state machine, the runs history, base-URL handling and
+the reachability classifier. It covers **none** of the live ledger, because there
+is no live ledger.
 
 ## Next
 
@@ -53,13 +61,13 @@ In order. Take the first one, finish it completely, stop.
    the mint path. Replace every `NOT RUN` below with the real transcript. If
    something breaks, **that is the increment** — fix or report it and record it.
    Fix the assumed URLs in `src/lib/targets.ts` at the same time.
-2. **T3 — the solve bench.** `bench.html`, a third Vite entry. Run the hash loop
-   at difficultyBits 14/16/18 using WebCrypto (`crypto.subtle.digest`), report
-   hashes/sec and projected median solve time, and let the result be copied out
-   for `docs/BENCH.md`. `src/lib/pow.ts` already has `medianHashes` and
-   `medianSolveMs`, tested; the bench only needs the browser digest and a UI.
-   This is what tunes the backend's start difficulty, so its output must say which
-   phone produced it.
+2. **Run the bench on an actual iPhone and append the result to
+   `docs/BENCH.md`.** This needs no deploy of anyone else's — `npm run dev`, open
+   `bench.html` from the phone on the same network, or deploy this repo. It takes
+   about a minute and it is the only thing standing between the relay and a real
+   answer on `difficultyBits`. See BENCH.md#what-this-already-suggests: on the one
+   device measured so far, the backend's default of 18 solves in 0.19 s, far under
+   item 5's 3 s floor. That finding needs a phone before anyone acts on it.
 3. **T4 — the drift check.** A script that fetches each sibling's
    `docs/STATE.md` from `raw.githubusercontent.com` on branch `loop`, extracts its
    claims, checks what it can (deploy reachable, build stamp fresh) and writes
@@ -82,12 +90,13 @@ npm ci
 npm run check
 ```
 
-**Result 2026-09-03: PASS.** `tsc -p tsconfig.json` clean; `vite build` produced
-`dist/` (index 1.73 kB, acceptance 2.50 kB, CSS 8.66 kB → 2.44 kB gzip, JS 11.43 kB
-+ 6.13 kB → 4.52 + 2.77 kB gzip); `node --test tests/*.test.ts` →
-`# tests 114 / # pass 114 / # fail 0`, across `tests/pow.test.ts` (32),
-`tests/contracts.test.ts` (30), `tests/acceptance.test.ts` (39) and the always-on
-half of `tests/smoke.test.ts` (13).
+**Result 2026-09-08: PASS.** `tsc -p tsconfig.json` clean; `vite build` produced
+`dist/` (three pages plus a Worker chunk; largest bundle 11.51 kB → 5.39 kB gzip,
+CSS 10.59 kB → 2.78 kB gzip); `node --test tests/*.test.ts` →
+`# tests 164 / # pass 164 / # fail 0`, across `tests/acceptance.test.ts` (39),
+`tests/bench.test.ts` (35), `tests/pow.test.ts` (32), `tests/contracts.test.ts`
+(30), `tests/sha256.test.ts` (15) and the always-on half of `tests/smoke.test.ts`
+(13).
 
 The live half of `tests/smoke.test.ts` reported:
 
@@ -107,7 +116,7 @@ Blocker.
 npm run build && node scripts/verify-page.mjs
 ```
 
-**Result 2026-09-03: PASS, 23/23**, in Chromium at 390×844, `isMobile`, `hasTouch`,
+**Result 2026-09-08: PASS, 40/40**, in Chromium at 390×844, `isMobile`, `hasTouch`,
 iOS 18.2 user agent. What it actually asserted:
 
 - seven items render; the build stamp is filled in; the index title carries the
@@ -121,6 +130,17 @@ iOS 18.2 user agent. What it actually asserted:
 - a note containing `<img src=x onerror=…>` is rendered as text and injects no
   element
 - no uncaught page errors
+
+and for the bench page (T3):
+
+- every control is at least 44×44 and the page does not scroll sideways, before
+  and after results render
+- the device field is asked for first, and an unnamed device is called out
+- a **real** bench run completes — three difficulties, the actual hash loop, in a
+  real Worker (the copy block says `Worker`, so the main-thread fallback is not
+  silently masking a broken Worker)
+- every difficulty measures a non-zero rate, and the copy block carries the
+  device, a markdown table, and a recommendation
 
 `scripts/verify-page.mjs` needs a globally installed Playwright and is deliberately
 not a devDependency — see Decisions.
@@ -184,6 +204,29 @@ against, and this session has no phone. `scripts/verify-page.mjs` checks that th
   ledger is the product's entire argument. A suite that can grow it on every commit
   devalues it. Even the negative cases are constructed to be *provably* rejected —
   the bad-nonce test searches for a nonce it has verified locally will fail.
+- **The solve loop uses a hand-written synchronous SHA-256, not
+  `crypto.subtle.digest`.** This was measured, not assumed: awaiting a promise
+  per hash gives ~16,000 h/s versus ~950,000 h/s synchronous, which is an 11-second
+  median at 18 bits against 0.2 s. Item 5 wants 3–8 s, so WebCrypto cannot be in
+  the loop. `src/lib/sha256.ts` is pinned against the NIST vectors and
+  differentially against `node:crypto` at every length across the padding
+  boundaries. The bench measures `subtle.digest` on every run anyway and prints
+  the ratio, so the decision keeps re-justifying itself on real devices instead of
+  ageing into folklore. Full numbers in `docs/BENCH.md`.
+- **The bench runs in a Worker.** Not for tidiness: a solve at 18 bits blocks a
+  thread for hundreds of milliseconds, and measuring it on the main thread would
+  measure the browser's reaction to being blocked as well. It is also what the
+  real client must do, since item 2 wants the title pan smooth for 30 s. There is
+  a main-thread fallback, and the result says which one produced it — a
+  main-thread number is lower and the reader must be able to tell.
+- **The recommendation pools every hash from the whole run.** Per-difficulty rates
+  differ (the 14-bit phase is short and mostly JIT warm-up), and the hash rate does
+  not actually depend on difficulty — only the comparison does. Pooling avoids
+  tuning the backend from whichever difficulty happened to get the cleanest slice
+  of CPU.
+- **A fresh salt per sample.** The backend issues one salt per challenge; re-solving
+  a single salt would find the same nonce every time and report a variance of zero,
+  which looks like a beautifully precise measurement of nothing.
 - **The default `deviceClass` is `laptop`.** It drives the backend's energy
   estimate, and an append-only ledger cannot be corrected. A node test runner is
   not a phone; `SMOKE_DEVICE_CLASS` overrides it.
@@ -193,17 +236,23 @@ against, and this session has no phone. `scripts/verify-page.mjs` checks that th
 Things this repo cannot decide alone. They belong to `clvi-architecture`, which
 owns Contracts v1.
 
-1. **What type are `rangeStart` and `rangeEnd`?** ISO instants or ledger sequence
+1. **Is `difficultyBits: 18` too easy?** On the only device the bench has run on
+   (a headless desktop Chromium — *not* a phone), 18 bits solves in 0.19 s against
+   item 5's 3 s floor, and the bench recommends 23. A phone 5–10× slower still
+   lands near 1–2 s. This is a real signal but not yet evidence: it needs one run
+   on an actual iPhone before `clvi-backend` changes its default. See
+   `docs/BENCH.md`.
+2. **What type are `rangeStart` and `rangeEnd`?** ISO instants or ledger sequence
    numbers? `GET /audit/<from>.<to>` takes ISO, which suggests ISO, but the report
    is a different object. Pin it in Contracts v1 and tighten
    `validateAuditReport`.
-2. **Is `generatedAt` part of AuditReport?** The backend returns it; the frozen
+3. **Is `generatedAt` part of AuditReport?** The backend returns it; the frozen
    contract does not list it. Either add it to v1 or stop returning it.
-3. **What is the canonical error-code vocabulary?** The smoke suite asserts
+4. **What is the canonical error-code vocabulary?** The smoke suite asserts
    *structured* 4xx (`{error:{code}}`) everywhere, but only pattern-matches the
    code for reuse (`/use|replay|spent|dup/`) and expiry (`/expire|stale|timeout/`).
    A frozen list would let it assert exact codes.
-4. **Are the `loop--<site>.netlify.app` URLs right?** Every base URL in
+5. **Are the `loop--<site>.netlify.app` URLs right?** Every base URL in
    `src/lib/targets.ts` is a *convention*, not an observation. Nobody has confirmed
    a Netlify site name.
 
@@ -225,3 +274,16 @@ owns Contracts v1.
   pin a *mistake* rather than to confirm the code: `normalizeBaseUrl` silently
   rewrote `ftp://x.test` to `https://ftp//x.test`, and the first fix then rejected
   a bare `localhost:8888` as an unknown scheme. Keep writing tests that way.
+- T3 added a third, and this one was caught by *looking at the output* rather than
+  by a test: the bench's adaptive chunk size scaled from the chunk's budget instead
+  of the hashes actually performed, so every early-finishing solve inflated it
+  until it pinned to the cap — after which a single chunk ran seconds past the
+  deadline. The 18-bit row collected 4 samples instead of 12 and reported an
+  observed median 3.5× its projection. Nothing failed; the numbers were merely
+  wrong. `tests/bench.test.ts` now pins the budget overshoot. **When a bench
+  reports two numbers that should agree and they do not, that is the finding —
+  do not explain it away as sampling noise without checking.**
+- `scripts/verify-page.mjs` runs a genuine bench (three difficulties, real
+  hashing) and prints the resulting markdown block. That takes ~12 s of the run and
+  is worth it: it is the only thing that would catch the Worker silently failing
+  into the main-thread fallback.
